@@ -16,6 +16,9 @@ function update(set,to){
 	}
 	set.innerHTML=to
 }
+function updateMoney(){
+	update("uimoney",game.money)
+}
 function genGrid(){
 	for(var i=0;i<16;i++){
 		var row=document.createElement("tr")
@@ -23,11 +26,17 @@ function genGrid(){
 			var cell=document.createElement("td")
 			cell.innerHTML="1"
 			cell.classList.add("cell")
-			cell.onclick=((a,b)=>(()=>click(a,b)))(j,i) //closure stuff
+			cell.onclick=((a,b)=>((e)=>click(a,b,0,e)))(j,i) //closure stuff
+			cell.oncontextmenu=((a,b)=>((e)=>click(a,b,1,e)))(j,i)
 			row.appendChild(cell)
 		}
 		byid("uigrid2").appendChild(row)
 	}
+}
+function genParts(){
+	window.parts=[]
+	parts.push({name:"Uranium Cell",type:"cell",image:"uranium.1",ticks:15,powerpertick:1,cost:10,sell:0})
+	window.selectedpart=0
 }
 function loadImages(){
 	window.images={}
@@ -53,29 +62,46 @@ function tick(){
 		for(var j=0;j<16;j++){
 			var cell=row[j]
 			if(cell.type=="cell"){
-				game.money+=1
+				game.money+=cell.powerpertick
+				cell.ticks-=1
+				if(cell.ticks<=0){
+					row[j]={"type":"empty","image":"empty"}
+				}
 			}
 		}
 	}
-	update("uimoney",game.money)
+	updateMoney()
 	displayGrid()
 }
-function click(x,y){
+function click(x,y,r,e){
 	var disp=false
-	if(game.grid[y][x].type=="empty"){
-		if(game.money>=10){
-			game.money-=10
-			game.grid[y][x]={"type":"cell","image":"uranium.1"}
-			disp=true
+	if(r){
+		if(game.grid[y][x].type!="empty"){
+			game.money+=game.grid[y][x].sell
+			if(game.grid[y][x].sell!=0){
+				updateMoney()
+			}
+			game.grid[y][x]={"type":"empty","image":"empty"}
+			displayGrid()
 		}
-	}
-	if(disp){
-		displayGrid()
-		update("uimoney",game.money)
+		return false
+	}else{
+		if(game.grid[y][x].type=="empty"){
+			if(parts[selectedpart].cost<=game.money){
+				game.money-=parts[selectedpart].cost
+				game.grid[y][x]=Object.assign({},parts[selectedpart])
+			}
+		}
+		if(disp){
+			displayGrid()
+			updateMoney()
+		}
+		return false
 	}
 }
 function run(){
 	genGrid()
+	genParts()
 	window.game={}
 	game.money=10
 	game.grid=[]
@@ -87,7 +113,7 @@ function run(){
 		game.grid.push(row)
 	}
 	loadImages()
-	update("uimoney",game.money)
+	updateMoney()
 	displayGrid()
 	window.gameLoop=setInterval(tick,500)
 }
