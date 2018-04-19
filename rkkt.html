@@ -1,0 +1,106 @@
+<html>
+<head>
+<script>
+//RKK template edition
+//Goals for initial release:
+//Grid (use a table this time :/) (done)
+//Click to add cells (done)
+//Cells cost money (done)
+//Cells give money (done)
+function byid(id){
+	return document.getElementById(id)
+}
+function update(set,to){
+	if(typeof set=="string"){
+		set=byid(set)
+	}
+	set.innerHTML=to
+}
+function genGrid(){
+	for(var i=0;i<16;i++){
+		var row=document.createElement("tr")
+		for(var j=0;j<16;j++){
+			var cell=document.createElement("td")
+			cell.innerHTML="1"
+			cell.classList.add("cell")
+			cell.onclick=((a,b)=>(()=>click(a,b)))(j,i) //closure stuff
+			row.appendChild(cell)
+		}
+		byid("uigrid2").appendChild(row)
+	}
+}
+function loadImages(){
+	window.images={}
+	var imagesToLoad=[{name:"empty",url:"./nothing.png"},{name:"uranium.1",url:"./cell.png"}] //todo: make this autogenerate
+	for(var i=0;i<imagesToLoad.length;i++){
+		var n=imagesToLoad[i]
+		images[n.name]=new Image()
+		images[n.name].src=n.url
+	}
+}
+function displayGrid(){
+	for(var i=0;i<16;i++){
+		var row=byid("uigrid2").getElementsByTagName("tr")[i]
+		for(var j=0;j<16;j++){
+			var cell=row.getElementsByTagName("td")[j]
+			cell.replaceChild(images[game.grid[i][j].image].cloneNode(false),cell.firstChild)
+		}
+	}
+}
+function tick(){
+	for(var i=0;i<16;i++){
+		var row=game.grid[i]
+		for(var j=0;j<16;j++){
+			var cell=row[j]
+			if(cell.type=="cell"){
+				game.money+=1
+			}
+		}
+	}
+	update("uimoney",game.money)
+	displayGrid()
+}
+function click(x,y){
+	var disp=false
+	if(game.grid[y][x].type=="empty"){
+		if(game.money>=10){
+			game.money-=10
+			game.grid[y][x]={"type":"cell","image":"uranium.1"}
+			disp=true
+		}
+	}
+	if(disp){
+		displayGrid()
+		update("uimoney",game.money)
+	}
+}
+function run(){
+	genGrid()
+	window.game={}
+	game.money=10
+	game.grid=[]
+	for(var i=0;i<16;i++){
+		var row=[]
+		for(var j=0;j<16;j++){
+			row.push({"type":"empty","image":"empty"})
+		}
+		game.grid.push(row)
+	}
+	loadImages()
+	update("uimoney",game.money)
+	displayGrid()
+	window.gameLoop=setInterval(tick,500)
+}
+</script>
+<style>
+.cell, #uigrid{
+	border:1px solid black;
+}
+</style>
+</head>
+<body onload="run()">
+Money: $<span id="uimoney"></span><br>
+<table id="uigrid"><tbody id="uigrid2">
+</tbody></table>
+</body>
+</html>
